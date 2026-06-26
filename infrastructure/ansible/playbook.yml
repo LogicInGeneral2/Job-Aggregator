@@ -1,0 +1,20 @@
+---
+- name: Configure Kubernetes Cluster Namespaces
+  hosts: localhost
+  connection: local
+  collections:
+    - kubernetes.core
+  tasks:
+    - name: Create data-pipeline namespace
+      k8s:
+        name: data-pipeline
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Create monitoring namespace
+      k8s:
+        name: monitoring
+        api_version: v1
+        kind: Namespace
+        state: present

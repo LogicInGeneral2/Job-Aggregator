@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-worker
+  namespace: data-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: job-worker
+  template:
+    metadata:
+      labels:
+        app: job-worker
+    spec:
+      containers:
+      - name: worker
+        image: job-worker:v3
+        imagePullPolicy: Never
+        env:
+        - name: KAFKA_BROKER
+          value: "my-kafka-kafka-bootstrap:9092"
+        - name: ES_HOST
+          value: "https://elasticsearch-master:9200"
+        - name: ES_USER
+          value: "elastic"
+        - name: ES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: elasticsearch-master-credentials
+              key: password

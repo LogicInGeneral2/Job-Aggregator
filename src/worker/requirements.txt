@@ -1,0 +1,2 @@
+confluent-kafka==2.14.2
+elasticsearch==8.5.1

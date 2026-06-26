@@ -1,5 +1,1 @@
 replicas: 1
-antiAffinity: "soft"
-esConfig:
-  elasticsearch.yml: |
-    xpack.security.enabled: false

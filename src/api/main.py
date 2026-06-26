@@ -2,9 +2,20 @@ import os
 import json
 import warnings
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
 from redis import Redis
 from urllib3.exceptions import InsecureRequestWarning
+
+app = FastAPI(title="Global Job Board API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Hide TLS warnings
 warnings.simplefilter('ignore', InsecureRequestWarning)
@@ -14,8 +25,6 @@ ES_USER = os.getenv("ES_USER", "elastic")
 ES_PASSWORD = os.getenv("ES_PASSWORD", "")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-
-app = FastAPI(title="Global Job Board API")
 
 # Initialize connections
 es = Elasticsearch(

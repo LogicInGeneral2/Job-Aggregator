@@ -15,8 +15,11 @@ spec:
     spec:
       containers:
       - name: worker
-        image: job-worker:v1
+        image: job-worker:v2
         imagePullPolicy: Never
+        ports:
+        - name: metrics
+          containerPort: 8081
         env:
         - name: KAFKA_BROKER
           value: "my-kafka-kafka-bootstrap:9092"

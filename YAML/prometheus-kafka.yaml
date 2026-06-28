@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-kafka-kafka-exporter
+  namespace: data-pipeline
+  labels:
+    strimzi.io/name: my-kafka-kafka-exporter
+spec:
+  selector:
+    strimzi.io/name: my-kafka-kafka-exporter
+  ports:
+    - name: tcp-prometheus
+      port: 9404
+      targetPort: 9404
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-exporter-monitor
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      strimzi.io/name: my-kafka-kafka-exporter
+  namespaceSelector:
+    matchNames:
+      - data-pipeline
+  endpoints:
+  - port: tcp-prometheus
+    interval: 10s
+

@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-digest-sender
+  namespace: data-pipeline
+spec:
+  schedule: "0 9 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sender
+            image: digest-sender:v1
+            imagePullPolicy: Never
+            env:
+            - name: REDIS_HOST
+              value: "redis.default.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: SMTP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: alerts-smtp-credentials
+                  key: email
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: alerts-smtp-credentials
+                  key: password
+          restartPolicy: OnFailure

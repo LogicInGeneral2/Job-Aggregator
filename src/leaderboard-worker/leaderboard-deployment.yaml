@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leaderboard-worker
+  namespace: data-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leaderboard-worker
+  template:
+    metadata:
+      labels:
+        app: leaderboard-worker
+    spec:
+      containers:
+      - name: worker
+        image: leaderboard-worker:v1
+        imagePullPolicy: Never
+        env:
+        - name: KAFKA_BROKER
+          value: "my-kafka-kafka-bootstrap:9092"
+        - name: REDIS_HOST
+          value: "redis.default.svc.cluster.local" 
+        - name: REDIS_PORT
+          value: "6379"

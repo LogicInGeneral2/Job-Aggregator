@@ -94,3 +94,23 @@ def search_jobs(q: str):
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/api/skills/trending")
+def get_trending_skills(limit: int = 10):
+    """
+    Fetches the top trending skills directly from the Redis Sorted Set.
+    Returns the top 'limit' skills sorted by their frequency count.
+    """
+    try:
+        # ZREVRANGE gets the highest scores first. 
+        # 0 is the start index, (limit - 1) is the end index.
+        # withscores=True returns a list of tuples
+        raw_data = cache.zrevrange("trending_skills", 0, limit - 1, withscores=True)
+        
+        # Format the output into dictionaries
+        leaderboard = [{"skill": skill.upper(), "count": int(score)} for skill, score in raw_data]
+        
+        return {"trending": leaderboard}
+        
+    except Exception as e:
+        return {"error": str(e), "message": "Failed to fetch trending skills from Redis"}

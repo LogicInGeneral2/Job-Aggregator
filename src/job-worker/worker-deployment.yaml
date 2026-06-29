@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: job-worker:v2
+        image: job-worker:v5
         imagePullPolicy: Never
         ports:
         - name: metrics
@@ -24,7 +24,7 @@ spec:
         - name: KAFKA_BROKER
           value: "my-kafka-kafka-bootstrap:9092"
         - name: ES_HOST
-          value: "https://elasticsearch-master:9200"
+          value: "elasticsearch-master"
         - name: ES_USER
           value: "elastic"
         - name: ES_PASSWORD

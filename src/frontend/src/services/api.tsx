@@ -27,3 +27,11 @@ export const searchJobs = async (query: string): Promise<ApiResponse> => {
     if (!response.ok) throw new Error('Failed to search jobs');
     return response.json();
 };
+
+export const fetchTrendingSkills = async () => {
+    const response = await fetch(`${API_BASE_URL}/skills/trending`);
+    if (!response.ok) {
+        throw new Error('Failed to fetch trending skills');
+    }
+    return response.json();
+};

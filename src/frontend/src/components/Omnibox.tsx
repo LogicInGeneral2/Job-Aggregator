@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { searchJobs, ApiResponse } from '../services/api';
+// 1. Added trackJobClick to the imports
+import { searchJobs, ApiResponse, trackJobClick } from '../services/api';
 
 export default function Omnibox() {
     const [query, setQuery] = useState('');
@@ -15,6 +16,7 @@ export default function Omnibox() {
         setLoading(true);
         try {
             const data = await searchJobs(query);
+            console.log('Search results:', data); // Debugging line
             setResult(data);
         } catch (error) {
             console.error(error);
@@ -47,9 +49,21 @@ export default function Omnibox() {
                     <h3 className="text-xl font-bold mb-4">Search Results</h3>
                     <div className="grid gap-4">
                         {result.data.map((job) => (
-                            <div key={job.id} className="p-4 border rounded-lg bg-gray-50">
+                            <div key={job.id} className="p-4 border rounded-lg bg-gray-50 hover:shadow-md transition">
                                 <h4 className="font-semibold text-lg">{job.title}</h4>
-                                <p className="text-gray-600">{job.company}</p>
+                                {/* Added category to the display */}
+                                <p className="text-gray-600">{job.company} • {job.category}</p>
+                                
+                                {/* 2. Added the clickable link with the onClick tracker! */}
+                                <a 
+                                    href={job.url} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    onClick={() => trackJobClick(job.id, job.category)} 
+                                    className="text-blue-500 text-sm mt-2 inline-block font-medium"
+                                >
+                                    View Application &rarr;
+                                </a>
                             </div>
                         ))}
                     </div>

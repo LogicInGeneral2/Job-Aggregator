@@ -21,10 +21,22 @@ export const fetchRecentJobs = async (): Promise<ApiResponse> => {
     return response.json();
 };
 
-export const searchJobs = async (query: string): Promise<ApiResponse> => {
-    //Elasticsearch endpoint
-    const response = await fetch(`${API_BASE_URL}/jobs/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) throw new Error('Failed to search jobs');
+export const searchJobs = async (query: string) => {
+    // 1. Grab tracking ID
+    const sessionId = localStorage.getItem('session_id');
+    
+    // 2. Append it 
+    let url = `${API_BASE_URL}/jobs/search?q=${encodeURIComponent(query)}`;
+    if (sessionId) {
+        url += `&session_id=${encodeURIComponent(sessionId)}`;
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error('Failed to search jobs');
+    }
+
+    
     return response.json();
 };
 
@@ -34,4 +46,33 @@ export const fetchTrendingSkills = async () => {
         throw new Error('Failed to fetch trending skills');
     }
     return response.json();
+};
+
+export const trackJobClick = async (jobId: string, category: string) => {
+    try {
+        // Retrieve or generate a unique Session ID for browser
+        let sessionId = localStorage.getItem('session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('session_id', sessionId);
+        }
+
+        const response = await fetch(`${API_BASE_URL}/jobs/click`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                session_id: sessionId,
+                job_id: String(jobId),
+                category: category || 'unknown'
+            })
+        });
+
+        if (!response.ok) {
+            console.error('Failed to log click event');
+        }
+    } catch (err) {
+        console.error('Click tracking error:', err);
+    }
 };

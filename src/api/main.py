@@ -1,11 +1,15 @@
 import os
 import json
+from urllib import response
 import warnings
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from elasticsearch import Elasticsearch
-from redis import Redis
+import redis
 from urllib3.exceptions import InsecureRequestWarning
+from pydantic import BaseModel
+from confluent_kafka import Producer
+from typing import Optional
 
 app = FastAPI(title="Global Job Board API")
 
@@ -23,8 +27,9 @@ warnings.simplefilter('ignore', InsecureRequestWarning)
 ES_HOST = os.getenv("ES_HOST", "https://localhost:9200")
 ES_USER = os.getenv("ES_USER", "elastic")
 ES_PASSWORD = os.getenv("ES_PASSWORD", "")
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+
+REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
 
 # Initialize connections
 es = Elasticsearch(
@@ -32,7 +37,17 @@ es = Elasticsearch(
     basic_auth=(ES_USER, ES_PASSWORD),
     verify_certs=False
 )
-cache = Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+
+cache = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+
+# Initialize Kafka Producer for Clickstream
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
+click_producer = Producer({'bootstrap.servers': KAFKA_BROKER})
+
+class ClickEvent(BaseModel):
+    session_id: str
+    job_id: str
+    category: str
 
 @app.get("/")
 def health_check():
@@ -72,24 +87,61 @@ def get_recent_jobs():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+from typing import Optional
+
 @app.get("/api/jobs/search")
-def search_jobs(q: str):
-    """Performs a full-text search across job titles and companies."""
+def search_jobs(q: str, session_id: Optional[str] = None):
+    """
+    Performs a full-text search and dynamically boosts results 
+    based on the user's live clickstream preferences using function_score.
+    """
     try:
-        response = es.search(
-            index="jobs",
-            body={
+        # 1. The Base Query wrapped in a function_score
+        es_query = {
+            "function_score": {
                 "query": {
                     "multi_match": {
                         "query": q,
                         "fields": ["title^2", "company", "category"],
-                        "fuzziness": "AUTO" # Allows for minor typos
+                        "fuzziness": "AUTO"
                     }
                 },
+                "functions": [],
+                "boost_mode": "multiply"  # Multiplies the base score by the weight
+            }
+        }
+        
+        # 2. Check Redis for user preferences
+        if session_id:
+            preference_key = f"user_prefs:{session_id}"
+            favorite_categories = cache.zrevrange(preference_key, 0, 2)
+            
+            if favorite_categories:
+                print(f"Boosting search for session [{session_id}] with categories: {favorite_categories}")
+                # Build the absolute override functions
+                for category in favorite_categories:
+                    es_query["function_score"]["functions"].append({
+                        # THE FIX: Use a 'term' query on '.keyword' for an absolute, exact string match.
+                        "filter": {
+                            "term": {
+                                "category.keyword": category
+                            }
+                        },
+                        "weight": 6.7
+                    })
+
+        # 3. Execute the Personalized Search
+        response = es.search(
+            index="jobs",
+            body={
+                "query": es_query,
                 "size": 15
             }
         )
+        
+        # 4. Extract the job data
         jobs = [hit["_source"] for hit in response["hits"]["hits"]]
+            
         return {"source": "elasticsearch", "data": jobs}
         
     except Exception as e:
@@ -114,3 +166,24 @@ def get_trending_skills(limit: int = 10):
         
     except Exception as e:
         return {"error": str(e), "message": "Failed to fetch trending skills from Redis"}
+
+@app.post("/api/jobs/click")
+def record_click(event: ClickEvent):
+    """Records a user click and drops it into Kafka for real-time processing."""
+    try:
+        payload = event.model_dump()
+        
+        # Produce the click event to Kafka instantly
+        click_producer.produce(
+            topic="user-clickstream",
+            key=event.session_id.encode('utf-8'),
+            value=json.dumps(payload).encode('utf-8')
+        )
+        
+        # Temporarily force FastAPI to wait for Kafka's receipt!
+        click_producer.flush() 
+        
+        return {"status": "Event logged to Kafka"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

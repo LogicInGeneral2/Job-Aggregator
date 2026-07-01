@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchRecentJobs, ApiResponse } from '../services/api';
+import { fetchRecentJobs, ApiResponse, trackJobClick } from '../services/api';
 
 export default function TrendingJobs() {
     const [result, setResult] = useState<ApiResponse | null>(null);
@@ -39,7 +39,7 @@ export default function TrendingJobs() {
                     <div key={job.id} className="p-4 border rounded-lg shadow-sm hover:shadow-md transition">
                         <h3 className="font-semibold text-lg">{job.title}</h3>
                         <p className="text-gray-600">{job.company} • {job.category}</p>
-                        <a href={job.url} target="_blank" rel="noreferrer" className="text-blue-500 text-sm mt-2 inline-block">
+                        <a href={job.url} target="_blank" rel="noreferrer" onClick={() => trackJobClick(job.id, job.category)} className="text-blue-500 text-sm mt-2 inline-block">
                             View Application &rarr;
                         </a>
                     </div>

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: personalization-worker
+  namespace: data-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: personalization-worker
+  template:
+    metadata:
+      labels:
+        app: personalization-worker
+    spec:
+      containers:
+      - name: worker
+        image: personalization-worker:v4
+        imagePullPolicy: Never
+        env:
+        - name: KAFKA_BROKER
+          value: "my-kafka-kafka-bootstrap:9092"
+        - name: REDIS_HOST
+          value: "redis.default.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"

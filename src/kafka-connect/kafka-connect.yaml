@@ -1,0 +1,37 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnect
+metadata:
+  name: my-connect-cluster
+  namespace: data-pipeline
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 3.9.0
+  replicas: 1
+  bootstrapServers: my-kafka-kafka-bootstrap:9092
+  image: my-kafka-connect-s3:v3
+  groupId: connect-cluster
+  offsetStorageTopic: connect-cluster-offsets
+  configStorageTopic: connect-cluster-configs
+  statusStorageTopic: connect-cluster-status
+  template:
+    connectContainer:
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: minio-creds
+              key: aws-access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-creds
+              key: aws-secret-access-key
+  config:
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: false
+    value.converter.schemas.enable: false
+    config.storage.replication.factor: 1
+    offset.storage.replication.factor: 1
+    status.storage.replication.factor: 1

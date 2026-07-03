@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: greenhouse-scraper
+  namespace: data-pipeline
+spec:
+  schedule: "*/15 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scraper
+            image: greenhouse-scraper:v3
+            imagePullPolicy: Never
+            env:
+            - name: KAFKA_BROKER
+              value: "my-kafka-kafka-bootstrap:9092"
+          restartPolicy: OnFailure

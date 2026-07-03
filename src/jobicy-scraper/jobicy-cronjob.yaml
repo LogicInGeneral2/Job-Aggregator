@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: jobicy-scraper
+  namespace: data-pipeline
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scraper
+            image: jobicy-scraper:v1
+            imagePullPolicy: Never
+            env:
+            - name: KAFKA_BROKER
+              value: "my-kafka-kafka-bootstrap:9092"
+          restartPolicy: OnFailure

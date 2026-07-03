@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geo-worker
+  namespace: data-pipeline
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: geo-worker
+  template:
+    metadata:
+      labels:
+        app: geo-worker
+    spec:
+      containers:
+      - name: worker
+        image: geo-worker:v2
+        imagePullPolicy: Never
+        env:
+        - name: KAFKA_BROKER
+          value: "my-kafka-kafka-bootstrap:9092"
+        - name: REDIS_HOST
+          value: "redis.default.svc.cluster.local"

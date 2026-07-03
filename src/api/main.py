@@ -180,10 +180,37 @@ def record_click(event: ClickEvent):
             value=json.dumps(payload).encode('utf-8')
         )
         
-        # Temporarily force FastAPI to wait for Kafka's receipt!
+        # Wait for Kafka's receipt!
         click_producer.flush() 
         
         return {"status": "Event logged to Kafka"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/api/jobs/heatmap")
+def get_job_heatmap():
+    """Fetches real-time coordinates of active jobs from Redis."""
+    try:
+        # 1. Grab job IDs from the Redis
+        members = cache.zrange("job_heatmap", 0, 100)
+        
+        if not members:
+            return {"source": "redis", "data": []}
+            
+        # 2. Extract coordinates
+        coords = cache.geopos("job_heatmap", *members)
+        
+        results = []
+        for member, pos in zip(members, coords):
+            if pos: # Ensure coordinates exist
+                results.append({
+                    "label": member,
+                    "lng": pos[0],
+                    "lat": pos[1]
+                })
+                
+        return {"source": "redis", "data": results}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

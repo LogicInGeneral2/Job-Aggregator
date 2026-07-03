@@ -38,7 +38,8 @@ def main():
             'url': job.get('url'),
             'category': job.get('category'),
             'publication_date': job.get('publication_date'),
-            'description': job.get('description')
+            'description': job.get('description'),
+            'location': job.get('candidate_required_location')
         }
 
         # Trigger any available delivery report callbacks from previous loops

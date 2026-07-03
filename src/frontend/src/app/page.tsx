@@ -1,3 +1,4 @@
+import Heatmap from '@/components/Globe';
 import Omnibox from '@/components/Omnibox';
 import TrendingJobs from '@/components/TrendingJobs';
 import TrendingSkills from '@/components/TrendingSkills';
@@ -29,6 +30,8 @@ export default function Home() {
             <TrendingSkills />
         </div>
       </section>
+
+      <Heatmap />
 
     </main>
   );

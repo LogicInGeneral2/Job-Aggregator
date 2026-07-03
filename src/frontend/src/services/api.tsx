@@ -76,3 +76,9 @@ export const trackJobClick = async (jobId: string, category: string) => {
         console.error('Click tracking error:', err);
     }
 };
+
+export const fetchHeatmapData = async () => {
+    const response = await fetch(`${API_BASE_URL}/jobs/heatmap`);
+    if (!response.ok) throw new Error('Failed to fetch heatmap data');
+    return response.json();
+};

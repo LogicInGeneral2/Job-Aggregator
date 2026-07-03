@@ -82,3 +82,26 @@ export const fetchHeatmapData = async () => {
     if (!response.ok) throw new Error('Failed to fetch heatmap data');
     return response.json();
 };
+
+export const fetchUserProfile = async (sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/profile/${sessionId}`);
+    if (!response.ok) throw new Error('Failed to fetch profile');
+    return response.json();
+};
+
+export const removeUserPreference = async (sessionId: string, category: string) => {
+    // encodeURIComponent ensures spaces in categories (like "Software Development") don't break the URL
+    const response = await fetch(`${API_BASE_URL}/profile/${sessionId}/preferences/${encodeURIComponent(category)}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to remove preference');
+    return response.json();
+};
+
+export const resetUserProfile = async (sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/profile/${sessionId}`, {
+        method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to reset profile');
+    return response.json();
+};

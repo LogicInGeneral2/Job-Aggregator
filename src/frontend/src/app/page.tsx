@@ -2,6 +2,7 @@ import Heatmap from '@/components/Globe';
 import Omnibox from '@/components/Omnibox';
 import TrendingJobs from '@/components/TrendingJobs';
 import TrendingSkills from '@/components/TrendingSkills';
+import UserProfile from '@/components/UserProfile';
 
 export default function Home() {
   return (
@@ -26,12 +27,15 @@ export default function Home() {
         </div>
         
         {/* Right Column: Sidebar (Takes up 1/3 of the screen) */}
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 space-y-6">
             <TrendingSkills />
+            <UserProfile />
         </div>
       </section>
 
       <Heatmap />
+
+
 
     </main>
   );

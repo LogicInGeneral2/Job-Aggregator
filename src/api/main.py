@@ -214,3 +214,37 @@ def get_job_heatmap():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/profile/{session_id}")
+def get_user_profile(session_id: str):
+    """Fetches the user's current personalization profile and scores from Redis."""
+    try:
+        preference_key = f"user_prefs:{session_id}"
+        # Fetch all tracked categories and their scores
+        raw_data = cache.zrevrange(preference_key, 0, -1, withscores=True)
+        
+        # Format for the frontend
+        preferences = [{"category": cat, "score": int(score)} for cat, score in raw_data]
+        return {"session_id": session_id, "preferences": preferences}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/profile/{session_id}/preferences/{category}")
+def remove_preference(session_id: str, category: str):
+    """Synchronously removes a single category from the user's Redis profile."""
+    try:
+        preference_key = f"user_prefs:{session_id}"
+        cache.zrem(preference_key, category)
+        return {"status": "success", "message": f"Removed {category} from profile."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/profile/{session_id}")
+def reset_profile(session_id: str):
+    """Wipes the user's entire personalization profile."""
+    try:
+        preference_key = f"user_prefs:{session_id}"
+        cache.delete(preference_key)
+        return {"status": "success", "message": "Profile completely reset."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

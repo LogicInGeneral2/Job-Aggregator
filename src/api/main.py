@@ -248,3 +248,117 @@ def reset_profile(session_id: str):
         return {"status": "success", "message": "Profile completely reset."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+def generate_expansion_data(node_id: str):
+    """Helper function to execute the real Elasticsearch query for graph expansion."""
+    # node_id format: "cat_Software Development" or "loc_London"
+    try:
+        prefix, value = node_id.split("_", 1)
+        
+        # Map the node prefix to the exact Elasticsearch database field
+        field_map = {
+            "cat": "category.keyword",
+            "loc": "location.keyword",
+            "comp": "company.keyword"
+        }
+        
+        if prefix not in field_map:
+            return {"nodes": [], "edges": []}
+            
+        # The Real Database Query
+        response = es.search(
+            index="jobs",
+            body={
+                "query": {"term": {field_map[prefix]: value}},
+                "size": 5 
+            }
+        )
+        
+        nodes, edges = [], []
+        for hit in response["hits"]["hits"]:
+            job = hit["_source"]
+            child_id = f"job_{job['id']}"
+            
+            nodes.append({
+                "data": {
+                    "id": child_id, 
+                    "label": job["title"], 
+                    "type": "job", 
+                    "details": job 
+                }
+            })
+            edges.append({"data": {"source": node_id, "target": child_id}})
+            
+        return {"nodes": nodes, "edges": edges}
+    except Exception as e:
+        print(f"Expansion Error: {e}")
+        return {"nodes": [], "edges": []}
+
+
+@app.get("/api/graph/init")
+def init_graph(q: str, session_id: str):
+    try:
+        response = es.search(
+            index="jobs",
+            body={
+                "query": {
+                    "multi_match": {
+                        "query": q,
+                        "fields": ["title^3", "category^2", "location", "company"]
+                    }
+                },
+                "size": 3
+            }
+        )
+
+        nodes, edges = [], []
+        
+        for hit in response["hits"]["hits"]:
+            job = hit["_source"]
+            root_id = f"job_{hit['_id']}"
+            
+            nodes.append({"data": {"id": root_id, "label": job["title"], "type": "job", "details": job}})
+            
+            cat_id = f"cat_{job['category']}"
+            loc_id = f"loc_{job['location']}"
+            comp_id = f"comp_{job['company']}"
+            
+            nodes.extend([
+                {"data": {"id": cat_id, "label": job['category'], "type": "category"}},
+                {"data": {"id": loc_id, "label": job['location'], "type": "location"}},
+                {"data": {"id": comp_id, "label": job['company'], "type": "company"}}
+            ])
+            
+            edges.extend([
+                {"data": {"source": root_id, "target": cat_id}},
+                {"data": {"source": root_id, "target": loc_id}},
+                {"data": {"source": root_id, "target": comp_id}}
+            ])
+
+            # Calculate and park in Redis.
+            for n_id in [cat_id, loc_id, comp_id]:
+                real_expansion_data = generate_expansion_data(n_id)
+                cache.setex(f"graph_expand:{session_id}:{n_id}", 300, json.dumps(real_expansion_data))
+
+        unique_nodes = list({n['data']['id']: n for n in nodes}.values())
+        return {"nodes": unique_nodes, "edges": edges}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/graph/expand")
+def expand_node(node_id: str, session_id: str):
+    cache_key = f"graph_expand:{session_id}:{node_id}"
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        print(f"Level 2 Expansion served from Redis Warm Cache for {node_id}")
+        return json.loads(cached_data)
+        
+    # Cache Miss Logic
+    print(f"Cache Miss. Querying Elasticsearch for {node_id} expansion...")
+    real_data = generate_expansion_data(node_id)
+    
+    # Save to cache for the next click
+    cache.setex(cache_key, 300, json.dumps(real_data))
+    return real_data

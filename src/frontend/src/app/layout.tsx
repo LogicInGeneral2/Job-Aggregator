@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Omnibox from "@/components/Omnibox";
+import { GraphProvider } from "@/context/GraphContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +28,27 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    >       
+      <body className="min-h-screen flex flex-col items-center p-8 font-sans">
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-extrabold tracking-tight">Global Job Board Aggregator</h1>
+          <p className="text-gray-500 mt-2">Powered by Kubernetes, Kafka, Elasticsearch, and Redis</p>
+        </div>
+  
+        {/* Primary Components */}
+        <GraphProvider>
+          <Omnibox />
+
+          <div className="w-full  border-t my-12 border-gray-200"></div>
+
+          <div className="w-full"> {children} </div>
+        </GraphProvider>
+        
+
+
+      </body>
     </html>
   );
 }

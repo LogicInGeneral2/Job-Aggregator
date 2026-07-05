@@ -105,3 +105,15 @@ export const resetUserProfile = async (sessionId: string) => {
     if (!response.ok) throw new Error('Failed to reset profile');
     return response.json();
 };
+
+export const initGraph = async (query: string, sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/graph/init?q=${encodeURIComponent(query)}&session_id=${sessionId}`);
+    if (!response.ok) throw new Error('Failed to init graph');
+    return response.json();
+};
+
+export const expandGraphNode = async (nodeId: string, sessionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/graph/expand?node_id=${nodeId}&session_id=${sessionId}`);
+    if (!response.ok) throw new Error('Failed to expand graph');
+    return response.json();
+};

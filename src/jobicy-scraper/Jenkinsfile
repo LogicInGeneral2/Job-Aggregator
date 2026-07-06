@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+    environment {
+        DOCKER_CREDS = credentials('dockerhub')
+        APP_NAME = 'jobicy-scraper' 
+        SRC_PATH = './src/jobicy-scraper'
+    }
+    stages {
+        stage('Check Changes') {
+            steps {
+                script {
+                    def changes = sh(script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'", returnStdout: true).trim()
+                    if (changes == "") {
+                        echo "No changes in ${SRC_PATH}, skipping build."
+                        currentBuild.result = 'SUCCESS'
+                        error('Pipeline stopped: No changes detected.')
+                    }
+                }
+            }
+        }
+        stage('Docker Login') {
+            steps {
+                script {
+                    sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                sh "docker build -t ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER} ${SRC_PATH}"
+            }
+        }
+        stage('Push') {
+            steps {
+                sh "docker push ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh "sed -i 's|image: .*:.*|image: ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}|g' infrastructure/YAML/${APP_NAME}-deployment.yaml"
+                sh "git commit -am 'Update ${APP_NAME} to ${env.BUILD_NUMBER}'"
+                sh "git push origin main"
+            }
+        }
+    }
+}

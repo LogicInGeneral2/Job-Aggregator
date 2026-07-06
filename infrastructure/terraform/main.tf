@@ -48,7 +48,7 @@ resource "helm_release" "elasticsearch" {
   create_namespace = true
 
   values = [
-    file("../../YAML/elastic-values.yaml")
+    file("../YAML/elastic-values.yaml")
   ]
 
   depends_on = [kind_cluster.job_board_cluster]

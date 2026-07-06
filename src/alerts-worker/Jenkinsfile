@@ -1,9 +1,13 @@
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            label 'kaniko'
+        }
+    }
     environment {
-        DOCKER_CREDS = credentials('dockerhub')
         APP_NAME = 'alerts-worker' 
         SRC_PATH = './src/alerts-worker'
+        DOCKER_REPO = 'sirroastedpotato'
     }
     stages {
         stage('Check Changes') {
@@ -23,26 +27,23 @@ pipeline {
                 }
             }
         }
-        stage('Docker Login') {
+        stage('Build & Push') {
             steps {
-                script {
-                    sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                container('kaniko') {
+                    sh """
+                    /kaniko/executor \
+                    --context=${WORKSPACE}/${SRC_PATH} \
+                    --dockerfile=${WORKSPACE}/${SRC_PATH}/Dockerfile \
+                    --destination=${DOCKER_CREDS_USR}/${APP_NAME}:${BUILD_NUMBER}
+                    """
                 }
-            }
-        }
-        stage('Build') {
-            steps {
-                sh "docker build -t ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER} ${SRC_PATH}"
-            }
-        }
-        stage('Push') {
-            steps {
-                sh "docker push ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}"
             }
         }
         stage('Deploy') {
             steps {
                 sh "sed -i 's|image: .*:.*|image: ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}|g' infrastructure/YAML/${APP_NAME}-deployment.yaml"
+                git config user.name "Jenkins"
+                git config user.email "jenkins@example.com"
                 sh "git commit -am 'Update ${APP_NAME} to ${env.BUILD_NUMBER}'"
                 sh "git push origin main"
             }

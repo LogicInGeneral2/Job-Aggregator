@@ -34,14 +34,14 @@ pipeline {
                     /kaniko/executor \
                     --context=${WORKSPACE}/${SRC_PATH} \
                     --dockerfile=${WORKSPACE}/${SRC_PATH}/Dockerfile \
-                    --destination=${DOCKER_CREDS_USR}/${APP_NAME}:${BUILD_NUMBER}
+                    --destination=${DOCKER_REPO}/${APP_NAME}:${BUILD_NUMBER}
                     """
                 }
             }
         }
         stage('Deploy') {
             steps {
-                sh "sed -i 's|image: .*:.*|image: ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}|g' infrastructure/YAML/${APP_NAME}-deployment.yaml"
+                sh "sed -i 's|image: .*:.*|image: ${DOCKER_REPO}/${APP_NAME}:${env.BUILD_NUMBER}|g' infrastructure/YAML/${APP_NAME}-deployment.yaml"
                 sh "git config user.name \"Jenkins\""
                 sh "git config user.email \"jenkins@example.com\""
                 sh "git commit -am 'Update ${APP_NAME} to ${env.BUILD_NUMBER}'"

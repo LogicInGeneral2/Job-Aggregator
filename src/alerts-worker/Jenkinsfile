@@ -8,19 +8,20 @@ pipeline {
     stages {
         stage('Check Changes') {
             steps {
-                    script {
-                        if (currentBuild.previousBuild == null) {
-                            echo "First build detected, skipping change detection."
-                        } else {
-                            def changes = sh(script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'", returnStdout: true).trim()
-                            if (changes == "") {
-                                echo "No changes in ${SRC_PATH}, skipping build."
-                                currentBuild.result = 'SUCCESS'
-                                error('Pipeline stopped: No changes detected.')
-                            }
+                script {
+                    if (currentBuild.previousBuild == null) {
+                        echo "First build detected, skipping change detection."
+                    } else {
+                        def changes = sh(script: "git diff HEAD~1 --name-only | grep -E '^src/alerts-worker/'", returnStatus: true)
+                        
+                        if (changes != 0) {
+                            echo "No changes in src/alerts-worker/, skipping build."
+                            currentBuild.result = 'SUCCESS'
+                            error('Pipeline stopped: No changes detected.')
                         }
                     }
                 }
+            }
         }
         stage('Docker Login') {
             steps {

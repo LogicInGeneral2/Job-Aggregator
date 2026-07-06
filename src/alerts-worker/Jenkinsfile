@@ -10,6 +10,22 @@ pipeline {
         DOCKER_REPO = 'sirroastedpotato'
     }
     stages {
+        stage('Checkout') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: scm.branches,
+                    userRemoteConfigs: scm.userRemoteConfigs,
+                    extensions: [
+                        [$class: 'CloneOption',
+                            shallow: true,
+                            depth: 1,
+                            noTags: false,
+                            honorRefspec: true
+                        ]
+                    ]
+                ])
+            }
+        }
         stage('Check Changes') {
             steps {
                 script {

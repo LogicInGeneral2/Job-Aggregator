@@ -49,20 +49,20 @@ export default function UserProfile() {
 
     if (!sessionId || preferences.length === 0) {
         return (
-            <div className="p-6 bg-gray-50 rounded-xl border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-700 mb-2">My Analytics Profile</h3>
+            <div className="p-4 rounded-xl border border-gray-300 shadow-sm">
+                <h3 className="text-lg font-bold mb-2">My Preferred Jobs</h3>
                 <p className="text-sm text-gray-500">No behavioral data tracked yet. Click some jobs!</p>
             </div>
         );
     }
 
     return (
-        <div className="p-6 bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="p-4 rounded-xl border border-gray-300 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold text-gray-800">My Analytics Profile</h3>
+                <h3 className="text-lg font-bold mb-2">My Preferred Jobs</h3>
                 <button 
                     onClick={handleReset}
-                    className="text-xs px-3 py-1 bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition"
+                    className="text-xs px-4 py-2 bg-green-700 font-bold rounded-md hover:bg-green-500 transition"
                 >
                     Reset Profile
                 </button>
@@ -72,17 +72,16 @@ export default function UserProfile() {
                 We use your clicks to boost relevant search results. You control your data.
             </p>
 
-            <ul className="space-y-2">
+            <ul className="space-y-4">
                 {preferences.map((pref) => (
-                    <li key={pref.category} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <li key={pref.category} className="flex justify-between items-center p-4 rounded-lg border border-gray-500 hover:border-green-500 transition">
                         <div>
-                            <span className="font-semibold text-gray-700 block">{pref.category}</span>
-                            <span className="text-xs text-gray-400">Affinity Score: {pref.score}</span>
+                            <span className="font-semibold block">{pref.category}</span>
+                            <span className="text-xs text-gray-500">Affinity Score: {pref.score}</span>
                         </div>
                         <button 
                             onClick={() => handleRemove(pref.category)}
-                            className="text-sm text-gray-400 hover:text-red-500 transition"
-                            title="Remove from profile"
+                            className="text-sm text-green-700 hover:text-green-500 transition px-2 py-1 rounded-md"
                         >
                             X
                         </button>

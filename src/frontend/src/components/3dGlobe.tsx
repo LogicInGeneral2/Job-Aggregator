@@ -224,7 +224,7 @@ function Marker({
         >
           <div
             className={cn(
-              "cursor-pointer overflow-hidden rounded-full bg-neutral-900 shadow-lg transition-transform duration-200",
+              "cursor-pointer overflow-hidden rounded-full bg-black shadow-lg transition-transform duration-200",
               hovered && "scale-125 shadow-xl ring-1 ring-white/50",
             )}
             style={{
@@ -496,7 +496,7 @@ const defaultConfig: Required<Globe3DConfig> = {
   minDistance: 5,
   maxDistance: 15,
   initialRotation: { x: 0, y: 0 },
-  markerSize: 0.06,
+  markerSize: 0.01,
   showWireframe: false,
   wireframeColor: "#4a9eff",
   ambientIntensity: 0.6,

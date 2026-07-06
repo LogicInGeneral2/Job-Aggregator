@@ -31,20 +31,14 @@ export default function Heatmap() {
     return (
         <>
             <Globe3D
+                className="h-[calc(100vh-240px)] w-full"
                 markers={locations}
                 config={{
                 atmosphereColor: "#4da6ff",
                 atmosphereIntensity: 20,
-                bumpScale: 5,
+                bumpScale: 7,
                 autoRotateSpeed: 0.3,
-                }}
-                onMarkerClick={(marker) => {
-                console.log("Clicked marker:", marker.label);
-                }}
-                onMarkerHover={(marker) => {
-                if (marker) {
-                    console.log("Hovering:", marker.label);
-                }
+                markerSize: 0.1,
                 }}
             />
         </>

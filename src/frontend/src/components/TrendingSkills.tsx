@@ -30,11 +30,11 @@ export default function TrendingSkills() {
 
   if (loading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 animate-pulse">
-        <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-        <div className="space-y-3">
+      <div className="p-4 rounded-lg shadow-sm border border-gray-500 animate-pulse">
+        <div className="h-4 rounded w-1/2 mb-4"></div>
+        <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
+            <div key={i} className="h-4 bg-gray-300 rounded w-full"></div>
           ))}
         </div>
       </div>
@@ -46,30 +46,23 @@ export default function TrendingSkills() {
   }
 
   return (
-    <div className="p-6 rounded-lg shadow-sm border border-gray-200">
-      <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-        📈 Live Trending Skills
+    <div className="p-4 rounded-lg shadow-sm border border-gray-500">
+      <h2 className="text-xl font-bold mb-4 flex items-center">
+        Trending Skills
       </h2>
       
-      <ul className="space-y-3">
+      <ul className="space-y-4">
         {skills.map((s, index) => (
-          <li key={s.skill} className="flex justify-between items-center p-2 hover:bg-gray-50 rounded-md transition-colors">
-            <div className="flex items-center gap-3">
-              <span className="text-gray-400 font-mono text-sm w-4">{index + 1}.</span>
-              <span className="font-semibold text-gray-700">{s.skill}</span>
+          <li key={s.skill} className="flex justify-between items-center px-4 rounded-lg">
+            <div className="flex items-center font-semibold text-sm">
+              <span>{index + 1}. {s.skill}</span>
             </div>
-            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-full">
+            <span className="bg-green-700 text-white-800 text-xs font-bold p-2 rounded-full">
               {s.count} mentions
             </span>
           </li>
         ))}
       </ul>
-      
-      <div className="mt-5 pt-4 border-t border-gray-100 flex justify-end">
-        <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-1 rounded">
-          ⚡ Served instantly via Redis ZSET
-        </span>
-      </div>
     </div>
   );
 }

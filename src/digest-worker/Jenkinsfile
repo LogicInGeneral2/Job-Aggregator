@@ -8,17 +8,17 @@ pipeline {
     stages {
         stage('Check Changes') {
             steps {
-                    script {
-                        if (currentBuild.previousBuild == null) {
-                            echo "First build detected, skipping change detection."
-                        } else {
-                            def changes = sh(script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'", returnStdout: true).trim()
-                            if (changes == "") {
-                                echo "No changes in ${SRC_PATH}, skipping build."
-                                currentBuild.result = 'SUCCESS'
-                                error('Pipeline stopped: No changes detected.')
-                            }
-                        }
+                script {
+                    def changed = sh(
+                        script: "git diff HEAD~1 --name-only | grep '^src/digest-worker/' || true",
+                        returnStdout: true
+                    ).trim()
+
+                    if (!changed) {
+                        echo "No changes in src/digest-worker. Skipping build."
+                        return
+                    }
+                }
                     }
                 }
         }

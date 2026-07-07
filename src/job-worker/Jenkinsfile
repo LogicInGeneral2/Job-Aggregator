@@ -1,48 +1,82 @@
 pipeline {
-    agent any
+    agent {
+        // Kaniko builder
+        kubernetes {
+            yaml '''
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - name: kaniko
+                image: gcr.io/kaniko-project/executor:debug
+                command: ["sleep"]
+                args: ["9999999"]
+              - name: jnlp
+                image: jenkins/inbound-agent:latest
+            '''
+        }
+    }
     environment {
         DOCKER_CREDS = credentials('dockerhub')
         APP_NAME = 'job-worker' 
-        SRC_PATH = './src/job-worker'
+        SRC_PATH = 'src/job-worker'
+        CHANGES_DETECTED = 'false'
     }
     stages {
         stage('Check Changes') {
             steps {
-                    script {
-                        if (currentBuild.previousBuild == null) {
-                            echo "First build detected, skipping change detection."
+                script {
+                    if (currentBuild.previousBuild == null) {
+                        echo "First build detected. Proceeding to initialize baseline."
+                        env.CHANGES_DETECTED = 'true'
+                    } else {
+                        def exitCode = sh(
+                            script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'",
+                            returnStatus: true
+                        )
+                        
+                        if (exitCode == 0) {
+                            echo "Changes detected in directory ${SRC_PATH}!"
+                            env.CHANGES_DETECTED = 'true'
                         } else {
-                            def changes = sh(script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'", returnStdout: true).trim()
-                            if (changes == "") {
-                                echo "No changes in ${SRC_PATH}, skipping build."
-                                currentBuild.result = 'SUCCESS'
-                                error('Pipeline stopped: No changes detected.')
-                            }
+                            echo "No changes found in directory ${SRC_PATH}."
+                            env.CHANGES_DETECTED = 'false'
                         }
                     }
                 }
+            }
         }
-        stage('Docker Login') {
+        
+        stage('Build and Push') {
+            when {
+                environment name: 'CHANGES_DETECTED', value: 'true'
+            }
             steps {
-                script {
-                    sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${DOCKER_CREDS_USR} --password-stdin"
+                container('kaniko') {
+                    script {
+                        // 1. Authenticate with Docker Hub
+                        sh '''
+                            AUTH=$(echo -n "${DOCKER_CREDS_USR}:${DOCKER_CREDS_PSW}" | base64 | tr -d '\\n')
+                            mkdir -p /kaniko/.docker
+                            echo "{\\"auths\\":{\\"https://index.docker.io/v1/\\":{\\"auth\\":\\"${AUTH}\\"}}}" > /kaniko/.docker/config.json
+                        '''
+                        // 2. Build and Push the image
+                        sh "/kaniko/executor --context `pwd`/${SRC_PATH} --dockerfile `pwd`/${SRC_PATH}/Dockerfile --destination ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}"
+                    }
                 }
             }
         }
-        stage('Build') {
-            steps {
-                sh "docker build -t ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER} ${SRC_PATH}"
-            }
-        }
-        stage('Push') {
-            steps {
-                sh "docker push ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}"
-            }
-        }
+        
         stage('Deploy') {
+            when {
+                environment name: 'CHANGES_DETECTED', value: 'true'
+            }
             steps {
                 sh "sed -i 's|image: .*:.*|image: ${DOCKER_CREDS_USR}/${APP_NAME}:${env.BUILD_NUMBER}|g' infrastructure/YAML/${APP_NAME}-deployment.yaml"
-                sh "git commit -am 'Update ${APP_NAME} to ${env.BUILD_NUMBER}'"
+                sh "git config user.email 'jenkins@example.com'"
+                sh "git config user.name 'Jenkins'"
+                sh "git add infrastructure/YAML/${APP_NAME}-deployment.yaml"
+                sh "git commit -m 'Update ${APP_NAME} to ${env.BUILD_NUMBER}' || echo 'No manifest modifications needed'"
                 sh "git push origin main"
             }
         }

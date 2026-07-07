@@ -15,7 +15,8 @@ pipeline {
                 image: jenkins/inbound-agent:latest
             '''
         }
-    }    environment {
+    }    
+    environment {
         DOCKER_CREDS = credentials('dockerhub')
         APP_NAME = 'remotive-scraper' 
         SRC_PATH = 'src/remotive-scraper'

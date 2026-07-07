@@ -4,19 +4,28 @@ pipeline {
         DOCKER_CREDS = credentials('dockerhub')
         APP_NAME = 'digest-worker' 
         SRC_PATH = './src/digest-worker'
+        CHANGES_DETECT = 'false'
     }
     stages {
         stage('Check Changes') {
             steps {
                 script {
-                    def changed = sh(
-                        script: "git diff HEAD~1 --name-only | grep '^src/digest-worker/' || true",
-                        returnStdout: true
-                    ).trim()
-
-                    if (!changed) {
-                        echo "No changes in src/digest-worker. Skipping build."
-                        return
+                    if (currentBuild.previousBuild == null) {
+                        echo "First build detected. Proceeding to initialize baseline."
+                        env.CHANGES_DETECTED = 'true'
+                    } else {
+                        def exitCode = sh(
+                            script: "git diff HEAD~1 --name-only | grep -E '^${SRC_PATH}/'",
+                            returnStatus: true
+                        )
+                        
+                        if (exitCode == 0) {
+                            echo "Changes detected in directory ${SRC_PATH}!"
+                            env.CHANGES_DETECTED = 'true'
+                        } else {
+                            echo "No changes found in directory ${SRC_PATH}."
+                            env.CHANGES_DETECTED = 'false'
+                        }
                     }
                 }
             }

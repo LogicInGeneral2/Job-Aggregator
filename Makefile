@@ -22,6 +22,8 @@ stop:
 status:
 	@echo "Active Pipeline Workloads:"
 	kubectl get pods -n $(NAMESPACE)
+	kubectl get pods -n jenkins
+	kubectl get pods -n argocd
 	@echo "\nActive Observability Workloads:"
 	kubectl get pods -n $(MONITORING_NS)
 
@@ -32,11 +34,15 @@ ports:
 	@echo "Elasticsearch on https://localhost:9200"
 	@echo "Redis Cache on http://localhost:6379"
 	@echo "MinIO Engine on http://localhost:9001"
+	@echo "Jenkins on http://localhost:8081"
+	@echo "ArgoCD on http://localhost:9090"
 	kubectl port-forward svc/kube-prometheus-stack-grafana 8080:80 -n $(MONITORING_NS) & \
 	kubectl port-forward svc/elasticsearch-master 9200:9200 -n $(NAMESPACE) & \
 	kubectl port-forward svc/redis 6379:6379 -n default & \
 	kubectl port-forward svc/minio-service 9001:9001 -n $(NAMESPACE) & \
-	kubectl port-forward svc/my-kafka-kafka-bootstrap 9092:9092 -n $(NAMESPACE)
+	kubectl --namespace jenkins port-forward svc/jenkins 8081:8080 & \
+	kubectl --namespace argocd port-forward svc/argocd-server 9090:443 & \
+	kubectl port-forward svc/my-kafka-kafka-bootstrap 9092:9092 -n $(NAMESPACE) 
 
 # Runs the background backend web framework automatically with credentials attached
 run-backend:

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: job-aggregator-health-dashboard
+  namespace: monitoring
+  labels:
+    # Tells Grafana to auto-import this dashboard
+    grafana_dashboard: "1"
+data:
+  job-aggregator-dashboard.json: |-
+    {
+      "title": "Job Aggregator Health",
+      "tags": ["sre", "portfolio"],
+      "timezone": "browser",
+      "refresh": "10s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Failing Worker Pods",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "targets": [
+            {
+              "expr": "count(kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"}) or vector(0)",
+              "legendFormat": "Crashing Pods"
+            }
+          ],
+          "colorMode": "background",
+          "colors": ["#299c46", "rgba(237, 129, 40, 0.89)", "#d44a3a"],
+          "thresholds": "0,1"
+        },
+        {
+          "type": "timeseries",
+          "title": "Worker CPU Usage",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "targets": [
+            {
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[2m])) by (pod)",
+              "legendFormat": "{{pod}}"
+            }
+          ]
+        }
+      ]
+    }

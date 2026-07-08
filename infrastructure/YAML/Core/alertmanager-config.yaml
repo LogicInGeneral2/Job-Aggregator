@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-kube-prometheus-stack-alertmanager
+  namespace: monitoring
+type: Opaque
+stringData:
+  alertmanager.yaml: |-
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: 'jobs.aggregator.alert@gmail.com'
+      smtp_auth_username: 'jobs.aggregator.alert@gmail.com'
+      smtp_auth_password: 'CREATED_THROUGH_CONSOLE'
+      smtp_require_tls: true
+
+    route:
+      group_by: ['alertname', 'pod']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 1h
+      receiver: 'email-notifications'
+
+    receivers:
+    - name: 'email-notifications'
+      email_configs:
+      - to: 'jjjklulz@gmail.com'
+        send_resolved: true

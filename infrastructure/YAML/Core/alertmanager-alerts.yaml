@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: job-aggregator-sre-alerts
+  namespace: monitoring
+  labels:
+    # Tells Prometheus to actively read this file.
+    release: kube-prometheus-stack
+spec:
+  groups:
+  - name: job-aggregator.rules
+    rules:
+    # ALERT 1: POD CRASHING
+    - alert: WorkerPodCrashing
+      # If a pod restarts more than 0 times in 5 minutes
+      expr: rate(kube_pod_container_status_restarts_total{namespace!="kube-system"}[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Pod {{ $labels.pod }} is crashing!"
+        description: "The pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has restarted. Check logs."
+
+    # ALERT 2: HIGH CPU USAGE
+    - alert: HighCpuUsage
+      # If any pod uses more than 80% of its CPU limit
+      expr: sum(rate(container_cpu_usage_seconds_total{image!="", namespace!="kube-system"}[5m])) by (pod, namespace) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU on {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} is consuming over 80% CPU for more than 5 minutes."
+
+# ALERT 3: DEPLOYMENT REPLICAS MISMATCH
+    - alert: DeploymentReplicasNotReady
+      # If the number of desired replicas doesn't match
+      expr: kube_deployment_status_replicas_available{namespace!="kube-system"} < kube_deployment_spec_replicas{namespace!="kube-system"}
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Deployment {{ $labels.deployment }} is missing pods!"
+        description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has pods that are not ready (e.g., stuck in Pending or ImagePullBackOff) for more than 5 minutes."
